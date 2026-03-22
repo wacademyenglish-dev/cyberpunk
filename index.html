@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOLFSTATION | Cyberpunk 2077 (B2)</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        void: '#050505',
+                        panel: '#0d0d0f',
+                        cyberYellow: '#FCEE0A',
+                        neonCyan: '#00F0FF',
+                        neonRed: '#FF003C',
+                        corpoBlue: '#0A1B3F'
+                    },
+                    fontFamily: {
+                        title: ['Rajdhani', 'sans-serif'],
+                        body: ['Inter', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    },
+                    boxShadow: {
+                        'glow-yellow': '0 0 20px rgba(252, 238, 10, 0.5)',
+                        'glow-cyan': '0 0 20px rgba(0, 240, 255, 0.4)',
+                        'glow-red': '0 0 20px rgba(255, 0, 60, 0.5)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* CORE WOLFSTATION AESTHETIC - CYBERPUNK THEME */
+        body { 
+            background-color: #050505; 
+            color: #f4f4f5; 
+            overflow-x: hidden; 
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+            background-attachment: fixed;
+        }
+
+        .scanlines {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none; z-index: 9998; opacity: 0.3;
+        }
+
+        .hud-panel {
+            background: rgba(10, 10, 12, 0.85);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(252, 238, 10, 0.2);
+        }
+
+        /* Dark Cards */
+        .game-card {
+            background: rgba(15, 15, 18, 0.9);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .game-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 6px; height: 100%;
+            background: #00F0FF; opacity: 0.5; border-radius: 4px 0 0 4px;
+        }
+        .game-card:hover { border-color: #00F0FF; box-shadow: 0 0 20px rgba(0, 240, 255, 0.1); }
+
+        /* Drag and Drop Styling */
+        .draggable-item {
+            cursor: grab; background: #121214; border: 1px solid rgba(0, 240, 255, 0.4);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); transition: all 0.2s ease;
+            user-select: none; padding: 12px 24px; border-radius: 4px;
+        }
+        .draggable-item:active { cursor: grabbing; transform: scale(0.95); }
+        .draggable-item.dragging { opacity: 0.4; border-color: #FCEE0A; }
+        
+        .drop-zone { background: #0d0d0f; border: 1px solid rgba(252, 238, 10, 0.2); transition: all 0.3s ease; }
+        .drop-zone.over { border-color: #FCEE0A; box-shadow: inset 0 0 20px rgba(252,238,10,0.1); }
+        .drop-target-inner {
+            min-height: 60px; border: 2px dashed rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.02); transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 8px;
+        }
+        .drop-zone.correct-match { border-color: #00F0FF; box-shadow: 0 0 15px rgba(0, 240, 255, 0.2); }
+        .drop-zone.correct-match .drop-target-inner { border-style: solid; border-color: transparent; background: transparent; }
+
+        .btn-interact { transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .btn-interact:hover { transform: scale(1.1); filter: brightness(1.2); }
+
+        .combat-btn { transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1); text-transform: uppercase; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; }
+        .combat-btn:hover:not(:disabled) { border-color: #00F0FF; box-shadow: 0 0 15px rgba(0, 240, 255, 0.3); transform: translateY(-2px); background: rgba(0, 240, 255, 0.1); }
+        .combat-btn.correct { background: rgba(0, 240, 255, 0.2); border-color: #00F0FF; color: #00F0FF; box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.3); }
+        .combat-btn.wrong { background: rgba(255, 0, 60, 0.2); border-color: #FF003C; color: #FF003C; opacity: 0.6; }
+
+        .stt-box { background: linear-gradient(90deg, rgba(252, 238, 10, 0.1) 0%, rgba(0,0,0,0) 100%); border-left: 3px solid #FCEE0A; }
+
+        .drawer { transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1); }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 24px; width: 12px;
+            background: #00F0FF; cursor: pointer; margin-top: -10px;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.6); border-radius: 2px;
+        }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: rgba(255,255,255,0.1); }
+
+        @keyframes glitch-anim {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+        .damage-flash { animation: glitch-anim 0.3s; box-shadow: inset 0 0 80px rgba(255, 0, 60, 0.6) !important; border-color: #FF003C !important; }
+        .xp-flash { box-shadow: inset 0 0 50px rgba(252, 238, 10, 0.4) !important; border-color: #FCEE0A !important; }
+
+        .fade-in { animation: fadeIn 0.6s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Glitch Text Effect */
+        .glitch-text { position: relative; color: white; }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+        .glitch-text::before { left: 2px; text-shadow: -1px 0 #FF003C; clip: rect(44px, 450px, 56px, 0); animation: glitch-anim 5s infinite linear alternate-reverse; }
+        .glitch-text::after { left: -2px; text-shadow: -1px 0 #00F0FF; clip: rect(44px, 450px, 56px, 0); animation: glitch-anim 5s infinite linear alternate-reverse; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #00F0FF; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="font-body antialiased flex flex-col h-screen overflow-hidden selection:bg-cyberYellow selection:text-black">
+
+    <div class="scanlines"></div>
+    <div id="fx-layer" class="fixed inset-0 pointer-events-none z-[100]"></div>
+
+    <!-- GAME OVER SCREEN -->
+    <div id="game-over-screen" class="fixed inset-0 z-[9999] bg-black hidden flex-col items-center justify-center text-center px-4">
+        <h1 class="font-title text-8xl md:text-9xl text-neonRed tracking-widest mb-4 uppercase drop-shadow-glow-red">FLATLINED</h1>
+        <p class="font-mono text-xl text-gray-400 mb-8 tracking-widest uppercase">Street Cred: 0. You are a nobody.</p>
+        <p class="font-body text-gray-300 mb-12 max-w-lg">In Night City, you fade away. No one remembers your name.</p>
+        <button onclick="location.reload()" class="bg-cyberYellow text-black hover:bg-white px-10 py-4 font-mono uppercase tracking-widest transition-all font-bold">RELOAD SAVE</button>
+    </div>
+
+    <!-- TOP HUD -->
+    <header class="fixed top-0 w-full z-50 hud-panel px-6 py-4 flex justify-between items-center border-b-2 border-neonCyan">
+        <div class="flex items-center gap-4">
+            <i class="fa-solid fa-microchip text-cyberYellow text-2xl drop-shadow-glow-yellow"></i>
+            <span class="font-title text-3xl tracking-widest text-white uppercase">Wolfstation</span>
+            <span class="px-2 py-1 text-[10px] font-mono border border-neonCyan text-neonCyan rounded bg-neonCyan/10 hidden md:block">B2 UPPER</span>
+        </div>
+        
+        <div class="flex items-center gap-8 font-mono text-sm">
+            <div class="flex flex-col items-end">
+                <span class="text-gray-400 text-[10px] tracking-widest mb-1">STREET CRED</span>
+                <div class="flex items-center gap-3">
+                    <div class="w-32 h-2 bg-gray-800 border border-white/20 rounded-full overflow-hidden">
+                        <div id="cred-bar" class="h-full bg-cyberYellow transition-all duration-300" style="width: 50%;"></div>
+                    </div>
+                    <span id="cred-counter" class="text-2xl font-title text-cyberYellow tracking-widest">50</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2 hidden md:flex">
+                <span class="text-neonCyan tracking-widest">XP</span>
+                <span id="xp-text" class="text-neonCyan text-lg font-bold">0</span>
+            </div>
+            
+            <button onclick="toggleFullScreen()" class="w-10 h-10 rounded border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
+                <i class="fa-solid fa-expand text-gray-400"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- STAGE -->
+    <main id="engine-stage" class="flex-grow relative pt-28 pb-24 overflow-y-auto w-full z-10 flex flex-col items-center"></main>
+
+    <!-- TACTICAL BOARD DRAWER -->
+    <div id="tactical-board" class="fixed right-0 top-0 h-full w-[450px] bg-void border-l border-neonRed/50 z-[6000] translate-x-full drawer flex flex-col shadow-[-15px_0_40px_rgba(255,0,60,0.2)]">
+        <div class="p-6 border-b border-white/10 flex justify-between items-center bg-neonRed/5">
+            <h2 class="font-title text-2xl tracking-wider text-neonRed uppercase"><i class="fa-solid fa-terminal mr-3"></i>Tactical Board</h2>
+            <button onclick="toggleDrawer('tactical-board')" class="text-gray-500 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+        </div>
+        <div class="flex-grow p-2">
+            <textarea id="whiteboard-data" class="w-full h-full bg-transparent p-6 text-neonCyan font-mono text-sm leading-relaxed resize-none focus:outline-none placeholder:text-gray-700" placeholder="> Input live syntax overrides and corrections..."></textarea>
+        </div>
+        <div class="p-4 bg-black/60 border-t border-white/5 flex gap-2 items-center">
+            <button onclick="document.getElementById('whiteboard-data').value=''" class="text-[10px] font-mono bg-neonRed/20 text-neonRed px-4 py-2 rounded border border-neonRed/30 hover:bg-neonRed/40 transition-all uppercase">Purge Cache</button>
+            <div class="flex-grow"></div>
+            <span class="text-[10px] font-mono text-gray-600">B2_MODULE_ACTIVE</span>
+        </div>
+    </div>
+
+    <!-- PLAYLIST DRAWER -->
+    <div id="lesson-map" class="fixed left-0 top-0 h-full w-[350px] bg-panel border-r border-cyberYellow/50 z-[5000] -translate-x-full drawer flex flex-col shadow-[15px_0_40px_rgba(252,238,10,0.1)]">
+        <div class="p-6 pb-2 border-b border-white/10 flex justify-between items-center">
+            <div>
+                <h2 class="font-title text-2xl text-cyberYellow mb-1 tracking-widest">Mission Log</h2>
+                <p class="text-xs text-gray-400 font-mono uppercase tracking-widest" id="map-subtitle">30 Steps • B2</p>
+            </div>
+            <button onclick="toggleDrawer('lesson-map')" class="text-gray-500 hover:text-white"><i class="fa-solid fa-chevron-left text-xl"></i></button>
+        </div>
+        <div id="map-nodes" class="flex-grow flex flex-col gap-1 overflow-y-auto p-4 scrollbar-hide"></div>
+    </div>
+
+    <!-- FOOTER NAV -->
+    <footer class="fixed bottom-0 w-full z-50 hud-panel border-t border-white/10 px-6 py-4 flex justify-between items-center">
+        <button onclick="toggleDrawer('lesson-map')" class="text-gray-400 hover:text-cyberYellow transition-colors flex items-center gap-3 font-mono text-[10px] tracking-widest uppercase">
+            <i class="fa-solid fa-sitemap text-lg"></i> <span class="hidden sm:inline">Quest Log</span>
+        </button>
+        
+        <div class="flex items-center gap-10">
+            <button onclick="prevStep()" id="btn-prev" class="text-gray-500 hover:text-neonCyan disabled:opacity-20 transition-all">
+                <i class="fa-solid fa-caret-left text-3xl"></i>
+            </button>
+            <div class="text-center font-mono w-24">
+                <span id="current-step-display" class="text-2xl text-white font-bold tracking-widest">01</span>
+                <span id="total-step-display" class="text-xs text-gray-500">/ 30</span>
+            </div>
+            <button onclick="nextStep()" id="btn-next" class="text-gray-500 hover:text-neonCyan disabled:opacity-20 transition-all">
+                <i class="fa-solid fa-caret-right text-3xl"></i>
+            </button>
+        </div>
+
+        <button onclick="toggleDrawer('tactical-board')" class="text-gray-400 hover:text-neonRed transition-colors flex items-center gap-3 font-mono text-[10px] tracking-widest uppercase">
+            [ Board ] <i class="fa-solid fa-pen-clip text-lg"></i>
+        </button>
+    </footer>
+
+    <script>
+        // --- 1. GAME STATE ---
+        let state = { current: 0, cred: 50, xp: 0 }; 
+
+        // --- 2. VOCAB DATA FOR D&D ---
+        const vocabData = [
+            { id: 'v1', word: 'Fade Away', type: 'Phrasal Verb', def: 'To slowly disappear or be forgotten completely.', follow: 'What is a memory you hope will never fade away?' },
+            { id: 'v2', word: 'Major Leagues', type: 'Noun', def: 'The highest level of success or professional achievement.', follow: 'What does reaching the "major leagues" mean in your career?' },
+            { id: 'v3', word: 'Corpo', type: 'Noun', def: 'A powerful, ruthless corporate executive.', follow: 'Would you sell out your friends to become a rich Corpo?' },
+            { id: 'v4', word: 'Punk', type: 'Noun', def: 'A rebel, street fighter, or petty criminal.', follow: 'Is it better to be a free punk or a controlled corpo in Night City?' },
+            { id: 'v5', word: 'Fixer', type: 'Noun', def: 'Someone who arranges illegal jobs and contracts.', follow: 'If you were a Fixer, what kind of jobs would you arrange?' },
+            { id: 'v6', word: 'Hold on to', type: 'Phrasal Verb', def: 'To keep something and absolutely not let it go.', follow: 'What is a core belief you will always hold on to?' }
+        ];
+
+        // --- 3. LESSON DATA (30 SLIDES) ---
+        const lessonData = [
+            // 1. INSTRUCTOR
+            {
+                title: "Sys.Init: Teacher Brief",
+                html: `
+                    <div class="w-full max-w-3xl mx-auto px-4 py-8 fade-in text-left">
+                        <div class="game-card p-10 relative rounded-lg border-t-4 border-neonCyan">
+                            <span class="absolute -top-3 left-6 bg-void px-3 font-mono text-neonCyan text-xs tracking-widest border border-neonCyan/50">[ INSTRUCTOR ONLY ]</span>
+                            <h2 class="font-title text-4xl mb-6 text-white uppercase tracking-widest">WOLFSTATION: NIGHT CITY</h2>
+                            <div class="space-y-6 font-body text-gray-300 text-lg leading-relaxed">
+                                <p><strong class="text-cyberYellow font-mono text-sm uppercase">Level:</strong> B2 Upper-Intermediate.</p>
+                                <p><strong class="text-cyberYellow font-mono text-sm uppercase">Grammar:</strong> Second Conditional (Hypothetical Scenarios: If + Past, Would + Verb).</p>
+                                <p><strong class="text-cyberYellow font-mono text-sm uppercase">Mechanic:</strong> The student has <strong class="text-neonCyan">Street Cred</strong> (starts at 50). Grammar errors or cowardly choices cost Street Cred. If it hits 0, they flatline (Game Over).</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            // 2. COVER
+            {
+                title: "Login Screen",
+                html: `
+                    <div class="w-full h-full flex flex-col items-center justify-center text-center px-4 fade-in">
+                        <h1 class="font-title text-7xl md:text-9xl text-white tracking-widest mb-2 uppercase drop-shadow-glow-yellow glitch-text" data-text="CYBERPUNK">CYBERPUNK</h1>
+                        <p class="font-title text-3xl text-neonCyan tracking-[0.4em] mb-12 uppercase">City of Legends</p>
+                        <div class="flex gap-4">
+                            <span class="px-4 py-1 text-xs font-mono border border-neonRed text-neonRed bg-neonRed/10 shadow-glow-red">SECOND CONDITIONAL</span>
+                            <span class="px-4 py-1 text-xs font-mono border border-cyberYellow text-cyberYellow bg-cyberYellow/10 shadow-glow-yellow">STREET SLANG</span>
+                        </div>
+                    </div>
+                `
+            },
+            // 3-5. WARMUP
+            {
+                title: "Neural Sync: Regrets",
+                html: `
+                    <div class="w-full max-w-4xl mx-auto px-4 py-12 fade-in">
+                        <h2 class="font-title text-3xl text-gray-500 uppercase tracking-widest mb-8 text-center">Diagnostics I</h2>
+                        <div class="game-card p-10 md:p-14 text-center border-t-4 border-cyberYellow">
+                            <i class="fa-solid fa-clock-rotate-left text-6xl text-cyberYellow mb-6 drop-shadow-glow-yellow"></i>
+                            <p class="mb-10 font-title text-4xl text-white leading-relaxed">If you could go back to the beginning, what would you try to <span class="text-cyberYellow">change</span>?</p>
+                            <div class="stt-box p-8 text-left bg-void/80 rounded">
+                                <span class="text-xs font-mono text-cyberYellow block mb-2 uppercase">> Voice Prompt:</span>
+                                <p class="text-gray-300 text-xl italic font-body">"If I could go back, I would..."</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "Neural Sync: Survival",
+                html: `
+                    <div class="w-full max-w-4xl mx-auto px-4 py-12 fade-in">
+                        <h2 class="font-title text-3xl text-gray-500 uppercase tracking-widest mb-8 text-center">Diagnostics II</h2>
+                        <div class="game-card p-10 md:p-14 text-center border-t-4 border-neonRed">
+                            <i class="fa-solid fa-user-shield text-6xl text-neonRed mb-6 drop-shadow-glow-red"></i>
+                            <p class="mb-10 font-title text-4xl text-white leading-relaxed">In a dangerous world, who would you try to <span class="text-neonRed">save</span>?</p>
+                            <div class="stt-box p-8 text-left bg-void/80 rounded" style="border-color: #FF003C;">
+                                <span class="text-xs font-mono text-neonRed block mb-2 uppercase">> Voice Prompt:</span>
+                                <p class="text-gray-300 text-xl italic font-body">"If I had to choose, I would save... because..."</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "Neural Sync: Trust",
+                html: `
+                    <div class="w-full max-w-4xl mx-auto px-4 py-12 fade-in">
+                        <h2 class="font-title text-3xl text-gray-500 uppercase tracking-widest mb-8 text-center">Diagnostics III</h2>
+                        <div class="game-card p-10 md:p-14 text-center border-t-4 border-neonCyan">
+                            <i class="fa-solid fa-handshake-angle text-6xl text-neonCyan mb-6 drop-shadow-glow-cyan"></i>
+                            <p class="mb-10 font-title text-4xl text-white leading-relaxed">When everyone wants your money, who would you <span class="text-neonCyan">trust</span>?</p>
+                            <div class="stt-box p-8 text-left bg-void/80 rounded" style="border-color: #00F0FF;">
+                                <span class="text-xs font-mono text-neonCyan block mb-2 uppercase">> Voice Prompt:</span>
+                                <p class="text-gray-300 text-xl italic font-body">"I would only trust... because..."</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            // 6. DRAG & DROP VOCAB
+            {
+                title: "Lexicon Synchronizer",
+                html: `<div class="w-full max-w-6xl mx-auto px-4 py-8 fade-in flex flex-col h-full">
+                    <div class="text-center mb-8">
+                        <h2 class="font-title text-4xl text-white mb-2 tracking-widest uppercase drop-shadow-[0_0_10px_rgba(0,240,255,0.4)]">Lexicon Synchronizer</h2>
+                        <p class="text-gray-400 font-mono text-sm uppercase tracking-widest">Match the street slang to its definition.</p>
+                    </div>
+                    <div id="drag-source" class="flex flex-wrap justify-center gap-4 mb-10 min-h-[60px]"></div>
+                    <div id="drop-targets" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12"></div>
+                </div>`,
+                onLoad: () => {
+                    const dragSource = document.getElementById('drag-source');
+                    const dropTargets = document.getElementById('drop-targets');
+                    const shuffledVocab = [...vocabData].sort(() => Math.random() - 0.5);
+
+                    dragSource.innerHTML = shuffledVocab.map(v => `<div class="draggable-item font-title text-xl text-neonCyan uppercase tracking-widest rounded" draggable="true" id="${v.id}" ondragstart="drag(event)">${v.word}</div>`).join('');
+                    dropTargets.innerHTML = vocabData.map(v => `
+                        <div class="game-card p-6 rounded-lg flex flex-col items-center text-center relative transition-colors drop-zone" data-target="${v.id}" ondrop="drop(event, '${v.id}')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                            <span class="font-mono text-xs text-gray-500 uppercase tracking-widest mb-4 block w-full border-b border-white/5 pb-2">${v.type}</span>
+                            <p class="font-body text-lg text-white/90 mb-6 flex-grow flex items-center justify-center min-h-[60px]">${v.def}</p>
+                            <div class="drop-target-inner w-full border-2 border-dashed border-white/10 bg-black/40 flex items-center justify-center text-xs font-mono text-gray-600 uppercase rounded">Drop Here</div>
+                            <div id="follow-${v.id}" class="hidden w-full mt-6 p-5 border-t border-cyberYellow/30 bg-cyberYellow/5 text-left rounded fade-in">
+                                <span class="text-[10px] font-mono text-cyberYellow block mb-2 uppercase tracking-widest">> Voice Prompt:</span>
+                                <p class="font-body text-base text-gray-200 italic">"${v.follow}"</p>
+                            </div>
+                        </div>`
+                    ).join('');
+                }
+            },
+            // 7-8. LORE
+            {
+                title: "Lore: Night City",
+                html: `
+                    <div class="w-full max-w-4xl mx-auto px-4 py-12 fade-in">
+                        <h2 class="font-title text-5xl text-neonCyan mb-8 text-center uppercase tracking-widest">NIGHT CITY</h2>
+                        <div class="game-card p-12 font-body text-xl text-gray-300 leading-loose border-l-4 border-neonCyan">
+                            <p class="mb-6">Night City is an illusion. A city of <strong>punks</strong>, <strong>thugs</strong>, and <strong>corpos</strong>.</p>
+                            <p class="mb-6">People don't fight to win here. They fight just to survive one more day, hoping to make it to the <strong>major leagues</strong>.</p>
+                            <p>All you really have is how you will be remembered.</p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "Lore: The Choice",
+                html: `
+                    <div class="w-full max-w-4xl mx-auto px-4 py-12 fade-in">
+                        <h2 class="font-title text-5xl text-neonRed mb-8 text-center uppercase tracking-widest">THE CHOICE</h2>
+                        <div class="game-card p-12 font-body text-xl text-gray-300 leading-loose border-l-4 border-neonRed">
+                            <p class="mb-6">You will eventually die in Night City. It is inevitable.</p>
+                            <p class="mb-6">The only question left is: Will you die as a nobody, or will you go out in a blaze of glory?</p>
+                            <p>Will you <strong>fade away</strong>, or become a legend?</p>
+                        </div>
+                    </div>
+                `
+            },
+            // 9-11. VIDEO
+            {
+                title: "Optic Scan",
+                html: `
+                    <div class="w-full h-full flex flex-col items-center justify-center text-center px-4 fade-in">
+                        <i class="fa-solid fa-crosshairs text-7xl text-cyberYellow mb-8 drop-shadow-glow-yellow animate-pulse"></i>
+                        <h2 class="font-title text-6xl text-white mb-6 uppercase tracking-widest">ACCESSING OPTIC CAM</h2>
+                        <p class="font-body text-2xl text-gray-400 max-w-2xl mb-12 leading-relaxed">Watch the visual record of Night City. Listen to the narrator asking hypothetical questions.</p>
+                        <button onclick="nextStep()" class="bg-cyberYellow/20 border border-cyberYellow text-cyberYellow hover:bg-cyberYellow hover:text-black px-12 py-5 uppercase font-mono tracking-widest transition-all shadow-glow-yellow font-bold text-lg">PLAY MEMORY</button>
+                    </div>
+                `
+            },
+            {
+                title: "Memory File",
+                html: `
+                    <div class="w-full max-w-5xl mx-auto px-4 py-8 fade-in">
+                        <div class="relative w-full aspect-video rounded-xl overflow-hidden shadow-[0_0_40px_rgba(0,240,255,0.2)] border border-neonCyan/30 bg-black">
+                            <iframe class="w-full h-full" src="https://www.youtube.com/embed/fHrEootHhlc?start=5&rel=0&modestbranding=1" frameborder="0" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "Post-Watch: Tone",
+                html: `
+                    <div class="w-full max-w-4xl mx-auto px-4 py-12 fade-in">
+                        <h2 class="font-title text-4xl text-cyberYellow mb-10 border-b border-white/10 pb-4 uppercase tracking-widest">Field Analysis</h2>
+                        <div class="game-card p-12 flex flex-col gap-8 border-t-2 border-cyberYellow">
+                            <p class="text-2xl font-body leading-relaxed text-white">How does the narrator sound? Is he hopeful about the future, or full of regrets?</p>
+                            <div class="stt-box p-8 bg-black/40 rounded">
+                                <span class="text-xs font-mono text-cyberYellow block mb-3 uppercase tracking-widest">> SPEAK:</span>
+                                <p class="text-gray-300 text-xl italic">"I think he sounds... because he asks questions about..."</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            // 12-14. GRAMMAR
+            {
+                title: "Syntax: Structure",
+                html: `
+                    <div class="w-full max-w-4xl mx-auto px-4 py-12 fade-in">
+                        <h2 class="font-title text-5xl text-neonRed mb-8 text-center uppercase tracking-widest">THE SECOND CONDITIONAL</h2>
+                        <div class="game-card p-12 border-l-4 border-l-neonRed">
+                            <h3 class="font-title text-3xl text-white mb-6 uppercase tracking-widest">Hypothetical Situations</h3>
+                            <p class="text-xl text-gray-300 mb-10 font-body leading-relaxed">Used to talk about <strong class="text-neonRed">imaginary</strong> or highly unlikely situations in the present or future.</p>
+                            
+                            <div class="bg-void p-8 border border-white/5 mb-8 rounded shadow-inner">
+                                <p class="font-mono text-2xl text-white mb-6">" <span class="text-neonRed">If</span> you <span class="text-neonRed underline">went</span> back, what <span class="text-cyanLogic">would</span> you <span class="text-cyanLogic underline">change</span>? "</p>
+                                <p class="font-mono text-sm text-gray-500 uppercase">> Formula: IF + Past Simple, ... WOULD + Verb</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "Syntax: Meaning",
+                html: `
+                    <div class="w-full max-w-4xl mx-auto px-4 py-12 fade-in">
+                        <h2 class="font-title text-5xl text-neonRed mb-8 text-center uppercase tracking-widest">Logic Decryption</h2>
+                        <div class="game-card p-12 border-t-2 border-t-neonRed shadow-[0_10px_30px_rgba(255,0,60,0.1)]">
+                            <p class="text-2xl text-gray-300 mb-8 font-body leading-relaxed text-center">When he says <em>"If you could go back"</em>, can he actually go back in time?</p>
+                            
+                            <div class="grid grid-cols-2 gap-6 mt-10">
+                                <div class="bg-void p-6 border border-white/10 text-center rounded"><span class="text-xl font-bold text-neonRed">NO.</span><br><span class="text-gray-500 text-sm">It's impossible.</span></div>
+                                <div class="bg-void p-6 border border-white/10 text-center rounded"><span class="text-xl font-bold text-neonCyan">EXACTLY.</span><br><span class="text-gray-500 text-sm">That's why we use the 2nd Conditional.</span></div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "Pronunciation: Would you",
+                html: `
+                    <div class="w-full max-w-4xl mx-auto px-4 py-12 fade-in text-center">
+                        <h2 class="font-title text-5xl text-cyberYellow mb-10 uppercase tracking-widest">Audio Calibration 🎤</h2>
+                        <div class="game-card p-12 rounded-xl mb-10 shadow-[0_10px_30px_rgba(252,238,10,0.1)]">
+                            <p class="text-2xl text-gray-300 mb-8 font-body">In fast American speech, "Would you" sounds like:</p>
+                            <h3 class="text-6xl font-black text-cyberYellow mb-8 drop-shadow-glow-yellow font-mono">/ wʊdʒə /</h3>
+                            <p class="text-white text-4xl font-bold font-title tracking-widest">"Whatcha try to change?"</p>
+                        </div>
+                        <div class="stt-box p-8 bg-void/80 rounded border-cyberYellow text-left">
+                            <span class="text-xs font-mono text-cyberYellow block mb-3 uppercase tracking-widest">> Practice:</span>
+                            <p class="text-white text-2xl font-medium">Read the sentence 3 times fast!</p>
+                        </div>
+                    </div>
+                `
+            },
+            // 15-24. DRILLS
+            {
+                title: "Combat Drill 1",
+                html: `<div class="w-full max-w-3xl mx-auto px-4 py-16 text-center fade-in">
+                    <h2 class="font-title text-4xl text-neonRed mb-8 uppercase tracking-widest">STREET CRED AT RISK</h2>
+                    <div class="game-card p-12 rounded" id="drill-1">
+                        <p class="font-body text-2xl text-white mb-10 leading-relaxed">"If I _____ a corpo, I would have a lot of money."</p>
+                        <div class="grid grid-cols-2 gap-6">
+                            <button onclick="handleCombat(this, true, 1)" class="combat-btn bg-void p-6 text-xl">were</button>
+                            <button onclick="handleCombat(this, false, 1)" class="combat-btn bg-void p-6 text-xl">am</button>
+                        </div>
+                        <div id="fb-1" class="hidden fade-in stt-box p-6 mt-8 bg-void border-neonCyan text-left">
+                            <p class="text-neonCyan font-bold text-lg mb-1">CORRECT.</p>
+                            <p class="text-base text-gray-300">We use 'were' for all subjects in the 2nd conditional.</p>
+                        </div>
+                    </div>
+                </div>`
+            },
+            {
+                title: "Combat Drill 2",
+                html: `<div class="w-full max-w-3xl mx-auto px-4 py-16 text-center fade-in">
+                    <h2 class="font-title text-4xl text-neonRed mb-8 uppercase tracking-widest">STREET CRED AT RISK</h2>
+                    <div class="game-card p-12 rounded" id="drill-2">
+                        <p class="font-body text-2xl text-white mb-10 leading-relaxed">"What _____ you do if you found a million eddies?"</p>
+                        <div class="grid grid-cols-2 gap-6">
+                            <button onclick="handleCombat(this, false, 2)" class="combat-btn bg-void p-6 text-xl">will</button>
+                            <button onclick="handleCombat(this, true, 2)" class="combat-btn bg-void p-6 text-xl">would</button>
+                        </div>
+                    </div>
+                </div>`
+            },
+            {
+                title: "Combat Drill 3",
+                html: `<div class="w-full max-w-3xl mx-auto px-4 py-16 text-center fade-in">
+                    <h2 class="font-title text-4xl text-neonRed mb-8 uppercase tracking-widest">STREET CRED AT RISK</h2>
+                    <div class="game-card p-12 rounded" id="drill-3">
+                        <p class="font-body text-2xl text-white mb-10 leading-relaxed">"If she _____ a car, she would drive out of the city."</p>
+                        <div class="grid grid-cols-2 gap-6">
+                            <button onclick="handleCombat(this, true, 3)" class="combat-btn bg-void p-6 text-xl">had</button>
+                            <button onclick="handleCombat(this, false, 3)" class="combat-btn bg-void p-6 text-xl">has</button>
+                        </div>
+                    </div>
+                </div>`
+            },
+            {
+                title: "Combat Drill 4",
+                html: `<div class="w-full max-w-3xl mx-auto px-4 py-16 text-center fade-in">
+                    <h2 class="font-title text-4xl text-neonRed mb-8 uppercase tracking-widest">STREET CRED AT RISK</h2>
+                    <div class="game-card p-12 rounded" id="drill-4">
+                        <p class="font-body text-2xl text-white mb-10 leading-relaxed">"I would survive Night City if I _____ a gun."</p>
+                        <div class="grid grid-cols-2 gap-6">
+                            <button onclick="handleCombat(this, false, 4)" class="combat-btn bg-void p-6 text-xl">buy</button>
+                            <button onclick="handleCombat(this, true, 4)" class="combat-btn bg-void p-6 text-xl">bought</button>
+                        </div>
+                    </div>
+                </div>`
+            },
+            {
+                title: "Combat Drill 5",
+                html: `<div class="w-full max-w-3xl mx-auto px-4 py-16 text-center fade-in">
+                    <h2 class="font-title text-4xl text-cyberYellow mb-8 uppercase tracking-widest">LEXICON CHECK</h2>
+                    <div class="game-card p-12 rounded border-t-2 border-cyberYellow" id="drill-5">
+                        <p class="font-body text-2xl text-white mb-10 leading-relaxed">"To 'fade away' means to..."</p>
+                        <div class="flex flex-col gap-4">
+                            <button onclick="handleCombat(this, true, 5)" class="combat-btn bg-void p-6 text-lg">slowly disappear / be forgotten</button>
+                            <button onclick="handleCombat(this, false, 5)" class="combat-btn bg-void p-6 text-lg">fight aggressively</button>
+                        </div>
+                    </div>
+                </div>`
+            },
+            {
+                title: "Combat Drill 6",
+                html: `<div class="w-full max-w-3xl mx-auto px-4 py-16 text-center fade-in">
+                    <h2 class="font-title text-4xl text-cyberYellow mb-8 uppercase tracking-widest">LEXICON CHECK</h2>
+                    <div class="game-card p-12 rounded border-t-2 border-cyberYellow" id="drill-6">
+                        <p class="font-body text-2xl text-white mb-10 leading-relaxed">"If I ____ to the major leagues, I would be rich."</p>
+                        <div class="grid grid-cols-2 gap-6">
+                            <button onclick="handleCombat(this, false, 6)" class="combat-btn bg-void p-6 text-xl">make it</button>
+                            <button onclick="handleCombat(this, true, 6)" class="combat-btn bg-void p-6 text-xl">made it</button>
+                        </div>
+                    </div>
+                </div>`
+            },
+            {
+                title: "Combat Drill 7",
+                html: `<div class="w-full max-w-3xl mx-auto px-4 py-16 text-center fade-in">
+                    <h2 class="font-title text-4xl text-neonRed mb-8 uppercase tracking-widest">STREET CRED AT RISK</h2>
+                    <div class="game-card p-12 rounded" id="drill-7">
+                        <p class="font-body text-xl text-gray-400 mb-6 uppercase tracking-widest">Negative Form</p>
+                        <p class="font-body text-2xl text-white mb-10 leading-relaxed">"If I didn't trust you, I _____ be here."</p>
+                        <div class="grid grid-cols-2 gap-6">
+                            <button onclick="handleCombat(this, true, 7)" class="combat-btn bg-void p-6 text-xl">wouldn't</button>
+                            <button onclick="handleCombat(this, false, 7)" class="combat-btn bg-void p-6 text-xl">won't</button>
+                        </div>
+                    </div>
+                </div>`
+            },
+            {
+                title: "Combat Drill 8",
+                html: `<div class="w-full max-w-3xl mx-auto px-4 py-16 text-center fade-in">
+                    <h2 class="font-title text-4xl text-neonRed mb-8 uppercase tracking-widest">STREET CRED AT RISK</h2>
+                    <div class="game-card p-12 rounded" id="drill-8">
+                        <p class="font-body text-xl text-gray-400 mb-6 uppercase tracking-widest">Question Form</p>
+                        <p class="font-body text-2xl text-white mb-10 leading-relaxed">"_____ save me if I fell?"</p>
+                        <div class="grid grid-cols-2 gap-6">
+                            <button onclick="handleCombat(this, false, 8)" class="combat-btn bg-void p-6 text-xl">You would</button>
+                            <button onclick="handleCombat(this, true, 8)" class="combat-btn bg-void p-6 text-xl">Would you</button>
+                        </div>
+                    </div>
+                </div>`
+            },
+            {
+                title: "Combat Drill 9",
+                html: `<div class="w-full max-w-3xl mx-auto px-4 py-16 text-center fade-in">
+                    <h2 class="font-title text-4xl text-neonRed mb-8 uppercase tracking-widest">STREET CRED AT RISK</h2>
+                    <div class="game-card p-12 rounded" id="drill-9">
+                        <p class="font-body text-xl text-gray-400 mb-6 uppercase tracking-widest">Mixed Drill</p>
+                        <p class="font-body text-2xl text-white mb-10 leading-relaxed">"If he _____ a punk, he wouldn't start fights."</p>
+                        <div class="grid grid-cols-2 gap-6">
+                            <button onclick="handleCombat(this, false, 9)" class="combat-btn bg-void p-6 text-xl">wasn't</button>
+                            <button onclick="handleCombat(this, true, 9)" class="combat-btn bg-void p-6 text-xl">weren't</button>
+                        </div>
+                        <div id="fb-9" class="hidden fade-in stt-box p-6 mt-8 bg-void border-neonCyan text-left">
+                            <p class="text-neonCyan font-bold text-lg mb-1">CORRECT.</p>
+                            <p class="text-base text-gray-300">'weren't' is the grammatically correct form for all subjects in 2nd Conditional.</p>
+                        </div>
+                    </div>
+                </div>`
+            },
+            {
+                title: "Combat Drill 10",
+                html: `<div class="w-full max-w-3xl mx-auto px-4 py-16 text-center fade-in">
+                    <h2 class="font-title text-4xl text-neonRed mb-8 uppercase tracking-widest">STREET CRED AT RISK</h2>
+                    <div class="game-card p-12 rounded" id="drill-10">
+                        <p class="font-body text-xl text-gray-400 mb-6 uppercase tracking-widest">Meaning Check</p>
+                        <p class="font-body text-2xl text-white mb-10 leading-relaxed">"If I had the money, I would buy a flying car."<br><br>Does the speaker have the money?</p>
+                        <div class="grid grid-cols-2 gap-6">
+                            <button onclick="handleCombat(this, true, 10)" class="combat-btn bg-void p-6 text-xl">NO</button>
+                            <button onclick="handleCombat(this, false, 10)" class="combat-btn bg-void p-6 text-xl">YES</button>
+                        </div>
+                    </div>
+                </div>`
+            },
+            // 25-28. CONVERSATION & SLIDERS
+            {
+                title: "Conversation: Implants",
+                html: `
+                    <div class="w-full max-w-4xl mx-auto px-4 py-12 fade-in text-center">
+                        <h2 class="font-title text-5xl text-neonCyan mb-10 uppercase tracking-widest">Vocal Interface</h2>
+                        <div class="game-card p-14 border-t-4 border-neonCyan text-left">
+                            <p class="text-3xl text-white mb-10 font-body leading-relaxed">If you could have any cybernetic implant (robot eyes, super strength, hacking brain), what <strong class="text-neonCyan">would</strong> you choose?</p>
+                            <div class="stt-box p-8 bg-void rounded border-neonCyan">
+                                <p class="text-white text-2xl font-mono italic">"If I could have an implant, I would choose... because..."</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "Conversation: Fixer",
+                html: `
+                    <div class="w-full max-w-4xl mx-auto px-4 py-12 fade-in text-center">
+                        <h2 class="font-title text-5xl text-cyberYellow mb-10 uppercase tracking-widest">Roleplay: The Fixer</h2>
+                        <div class="game-card p-14 border-t-4 border-cyberYellow text-left">
+                            <p class="text-2xl text-gray-300 mb-8 font-body leading-relaxed">You are a Fixer offering a dangerous job to a mercenary. Convince them using the Second Conditional.</p>
+                            <div class="bg-black/60 p-8 border border-white/10 rounded mb-8">
+                                <span class="text-sm font-mono text-cyberYellow block mb-4 uppercase">> Script Starter:</span>
+                                <p class="text-white text-3xl font-title italic">"Listen... if you took this job, you would..."</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "Moral Alignment I",
+                html: `
+                    <div class="w-full max-w-4xl mx-auto px-4 py-12 fade-in text-center">
+                        <h2 class="font-title text-5xl text-white mb-10 uppercase tracking-widest">Where do you stand?</h2>
+                        <div class="game-card p-14 rounded-xl">
+                            <div class="flex justify-between font-title text-2xl mb-10">
+                                <span class="text-neonCyan">SELL OUT (Be rich)</span>
+                                <span class="text-neonRed">STAY TRUE (Be poor)</span>
+                            </div>
+                            <input type="range" min="0" max="100" value="50" class="mt-4 mb-10">
+                            <div class="stt-box p-8 mt-12 text-left bg-void border-neonCyan">
+                                <p class="text-2xl text-white font-body italic">"If I had the choice, I would... because..."</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "Moral Alignment II",
+                html: `
+                    <div class="w-full max-w-4xl mx-auto px-4 py-12 fade-in text-center">
+                        <h2 class="font-title text-5xl text-white mb-10 uppercase tracking-widest">Where do you stand?</h2>
+                        <div class="game-card p-14 rounded-xl border-t-2 border-cyberYellow">
+                            <div class="flex justify-between font-title text-2xl mb-10">
+                                <span class="text-cyberYellow uppercase">Blaze of Glory (Die Young)</span>
+                                <span class="text-gray-400 uppercase">Quiet Life (Live Long)</span>
+                            </div>
+                            <input type="range" min="0" max="100" value="50" class="mt-4 mb-10">
+                            <div class="stt-box p-8 mt-12 text-left bg-void border-cyberYellow">
+                                <p class="text-2xl text-white font-body italic">"I think it's better to... If I lived in Night City, I would..."</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            // 29. INTERACTIVE GAMEPLAY
+            {
+                title: "Interactive GIG",
+                html: `
+                    <div class="w-full max-w-6xl mx-auto px-4 py-12 flex flex-col h-full items-center justify-center fade-in">
+                        <h2 class="font-title text-6xl text-cyberYellow mb-6 uppercase tracking-widest drop-shadow-glow-yellow"><i class="fa-solid fa-phone-volume mr-4 animate-pulse"></i>INCOMING CALL</h2>
+                        <p class="font-mono text-gray-400 mb-12 uppercase tracking-widest text-lg">Your choices affect your Street Cred.</p>
+                        
+                        <div id="narrative-gameplay" class="w-full bg-void border border-cyberYellow/30 shadow-[0_0_30px_rgba(252,238,10,0.1)] p-12 min-h-[450px] flex flex-col justify-between">
+                            <!-- Injected via playNarrative() -->
+                        </div>
+                    </div>
+                `,
+                onLoad: () => playNarrative('start')
+            },
+            // 30. WRAP
+            {
+                title: "Mission Status",
+                html: `
+                    <div class="w-full h-full flex flex-col items-center justify-center text-center px-4 fade-in">
+                        <h1 class="font-title text-8xl md:text-9xl text-neonCyan mb-8 uppercase tracking-widest drop-shadow-glow-cyan">GIG COMPLETE</h1>
+                        <div class="flex gap-16 font-mono text-4xl mb-16 border-t border-b border-white/10 py-12 px-20 bg-white/5">
+                            <div class="flex flex-col items-center">
+                                <span class="text-gray-500 text-sm tracking-widest mb-3 uppercase">Final Street Cred</span>
+                                <span id="final-cred" class="text-cyberYellow text-7xl drop-shadow-glow-yellow">50</span>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <span class="text-neonCyan text-sm tracking-widest mb-3 uppercase">XP Earned</span>
+                                <span id="final-xp" class="text-neonCyan text-7xl shadow-glow-cyan">0</span>
+                            </div>
+                        </div>
+                        <button onclick="location.reload()" class="bg-cyberYellow text-black hover:bg-white px-14 py-6 font-bold uppercase font-mono text-xl tracking-widest transition-all">TAKE ANOTHER GIG</button>
+                    </div>
+                `,
+                onLoad: () => {
+                    document.getElementById('final-cred').innerText = state.cred;
+                    document.getElementById('final-xp').innerText = state.xp;
+                }
+            }
+        ];
+
+        // --- 4. GAMEPLAY NODES (Narrative RPG) ---
+        const narrativeNodes = {
+            start: {
+                text: "A Fixer calls you. 'I have a job. A Corpo wants to pay you to steal data from a rival, but the rival is a good person who helps the poor. It pays 1 million eddies.'",
+                choices: [
+                    { label: "ACCEPT THE GIG", text: "If I took the job, I would be rich.", next: "accept_gig" },
+                    { label: "DECLINE THE GIG", text: "If I did that, I wouldn't be able to sleep.", next: "decline_gig" }
+                ]
+            },
+            accept_gig: {
+                text: "You take the job. You break into the rival's office. You find the data, but you also find evidence that your Fixer is planning to kill you after you deliver it.",
+                choices: [
+                    { label: "DELETE DATA", text: "If I deleted the data, nobody would get it.", next: "end_delete" },
+                    { label: "SET A TRAP", text: "If I set a trap, I would kill the Fixer first.", next: "end_trap" }
+                ]
+            },
+            decline_gig: {
+                text: "You decline. The Fixer is angry and sends thugs to your apartment. They break down your door.",
+                choices: [
+                    { label: "FIGHT BACK", text: "If I fought, I would show them I'm not weak.", next: "end_fight" },
+                    { label: "ESCAPE", text: "If I ran away, I would survive.", next: "end_escape" }
+                ]
+            },
+            end_delete: {
+                text: "You deleted the data. The Corpo is furious, but you survived. You are poor, but alive. (+20 Cred)",
+                isEnd: true,
+                stt: "If you were in this situation, would you regret deleting the data? Why?",
+                action: () => { gainCred(20); gainXP(100); }
+            },
+            end_trap: {
+                text: "You killed the Fixer. Word spreads on the street. People fear you now. You made it to the major leagues. (+50 Cred)",
+                isEnd: true,
+                stt: "If someone betrayed you, how would you react?",
+                action: () => { gainCred(50); gainXP(200); }
+            },
+            end_fight: {
+                text: "You fought them off and survived. The streets respect you for not backing down. (+30 Cred)",
+                isEnd: true,
+                stt: "If you had to defend your home, what would you do?",
+                action: () => { gainCred(30); gainXP(150); }
+            },
+            end_escape: {
+                text: "You ran away and left the city. You survived, but you lost all respect. You faded away. (-40 Cred)",
+                isEnd: true,
+                stt: "Is survival always more important than reputation?",
+                action: () => { loseCred(40); }
+            }
+        };
+
+        function playNarrative(nodeId) {
+            const container = document.getElementById('narrative-gameplay');
+            const node = narrativeNodes[nodeId];
+
+            if (node.isEnd) {
+                container.innerHTML = `
+                    <div class="text-center fade-in flex flex-col h-full justify-center">
+                        <i class="fa-solid fa-envelope-open-text text-7xl text-neonCyan mb-8"></i>
+                        <h3 class="font-title text-5xl text-white mb-8 tracking-widest uppercase">GIG CONCLUDED</h3>
+                        <p class="text-2xl text-gray-300 font-body leading-relaxed border-l-4 border-cyberYellow pl-8 max-w-3xl mx-auto">${node.text}</p>
+                        
+                        <div class="mt-16 bg-white/5 border border-white/10 p-8 rounded text-left">
+                            <span class="text-sm font-mono text-neonCyan block mb-3 uppercase tracking-widest">> Follow-up Prompt:</span>
+                            <p class="text-2xl text-white italic font-body">"${node.stt}"</p>
+                        </div>
+                    </div>
+                `;
+                if(node.action) node.action();
+            } else {
+                let buttonsHTML = node.choices.map(c => `
+                    <button onclick="playNarrative('${c.next}')" class="flex flex-col items-center justify-center p-10 border border-white/20 bg-panel hover:bg-cyberYellow/10 hover:border-cyberYellow transition-all group gap-6 rounded">
+                        <span class="font-title text-3xl text-white block tracking-widest uppercase group-hover:text-cyberYellow">${c.label}</span>
+                        <span class="text-lg font-mono text-gray-400 italic px-4">"${c.text}"</span>
+                    </button>
+                `).join('');
+
+                container.innerHTML = `
+                    <div class="fade-in flex flex-col h-full">
+                        <p class="font-body text-3xl text-white mb-16 leading-relaxed border-l-4 border-neonRed pl-8">${node.text}</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-auto">
+                            ${buttonsHTML}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+
+        // --- 5. ENGINE LOGIC ---
+        function updateHUD() {
+            document.getElementById('cred-counter').innerText = state.cred;
+            document.getElementById('cred-bar').style.width = `${Math.min(100, Math.max(0, state.cred))}%`;
+            document.getElementById('xp-text').innerText = state.xp;
+            
+            if(state.cred <= 20) document.getElementById('cred-counter').classList.add('text-neonRed', 'animate-pulse');
+            else document.getElementById('cred-counter').classList.remove('text-neonRed', 'animate-pulse');
+        }
+
+        function loseCred(amount) {
+            state.cred -= amount;
+            updateHUD();
+            document.getElementById('fx-layer').classList.add('damage-flash');
+            setTimeout(() => document.getElementById('fx-layer').classList.remove('damage-flash'), 400);
+            if (state.cred <= 0) setTimeout(triggerGameOver, 600);
+        }
+
+        function gainCred(amount) {
+            state.cred += amount;
+            if(state.cred > 100) state.cred = 100;
+            updateHUD();
+        }
+
+        function gainXP(amount) { 
+            state.xp += amount; 
+            updateHUD(); 
+        }
+
+        function triggerGameOver() {
+            document.getElementById('game-over-screen').classList.replace('hidden', 'flex');
+        }
+
+        function renderStep() {
+            const step = lessonData[state.current];
+            document.getElementById('engine-stage').innerHTML = step.html;
+            
+            document.getElementById('current-step-display').innerText = state.current < 9 ? `0${state.current + 1}` : state.current + 1;
+            const totalDisplay = document.getElementById('total-step-display');
+            if (totalDisplay) totalDisplay.innerText = `/ ${lessonData.length}`;
+            
+            document.getElementById('btn-prev').disabled = state.current === 0;
+            document.getElementById('btn-next').disabled = state.current === lessonData.length - 1;
+            
+            if (step.onLoad) step.onLoad();
+            renderMap();
+        }
+
+        function nextStep() { if (state.current < lessonData.length - 1) { state.current++; renderStep(); } }
+        function prevStep() { if (state.current > 0) { state.current--; renderStep(); } }
+        function jumpTo(idx) { state.current = idx; renderStep(); toggleDrawer('lesson-map'); }
+
+        function toggleDrawer(id) {
+            const dr = document.getElementById(id);
+            if (dr.classList.contains('translate-x-full') || dr.classList.contains('-translate-x-full')) {
+                dr.classList.remove('translate-x-full', '-translate-x-full');
+            } else {
+                if (id === 'lesson-map') dr.classList.add('-translate-x-full');
+                else dr.classList.add('translate-x-full');
+            }
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else if (document.exitFullscreen) document.exitFullscreen();
+        }
+
+        function renderMap() {
+            const cont = document.getElementById('map-nodes');
+            cont.innerHTML = lessonData.map((s, i) => {
+                const isActive = i === state.current;
+                const cssClass = isActive ? 'border-cyberYellow bg-cyberYellow/10 text-white' : 'border-white/5 text-gray-500';
+                return `<div class="p-3 border-l-2 ${cssClass} cursor-pointer hover:bg-white/5 transition-all" onclick="jumpTo(${i})">
+                    <span class="font-mono text-[10px] mr-3">${i < 9 ? '0'+(i+1) : i+1}</span>
+                    <span class="font-title text-sm uppercase">${s.title}</span>
+                </div>`;
+            }).join('');
+        }
+
+        function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('over'); }
+        function dragLeave(ev) { ev.currentTarget.classList.remove('over'); }
+        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); ev.target.classList.add('dragging'); }
+        
+        function drop(ev, correctId) {
+            ev.preventDefault();
+            const target = ev.currentTarget;
+            target.classList.remove('over');
+            const data = ev.dataTransfer.getData("text");
+            const draggedEl = document.getElementById(data);
+            if(!draggedEl) return;
+            draggedEl.classList.remove('dragging');
+
+            if (data === correctId) {
+                const targetInner = target.querySelector('.drop-target-inner');
+                targetInner.innerHTML = '';
+                targetInner.appendChild(draggedEl);
+                target.classList.add('correct-match');
+                
+                draggedEl.classList.remove('cursor-grab', 'border-neonCyan/40', 'bg-panel');
+                draggedEl.classList.add('cursor-default', 'bg-transparent', 'border-transparent', 'text-neonCyan');
+                draggedEl.removeAttribute('draggable');
+                
+                const follow = document.getElementById('follow-' + correctId);
+                if (follow) follow.classList.remove('hidden');
+                
+                gainXP(20);
+            } else {
+                loseCred(5);
+            }
+        }
+
+        function handleCombat(btn, isCorrect, num) {
+            const btns = btn.parentElement.querySelectorAll('button');
+            btns.forEach(b => { b.disabled = true; if(b !== btn) b.style.opacity = '0.2'; });
+            
+            if (isCorrect) {
+                btn.classList.add('correct');
+                gainXP(50);
+                gainCred(5);
+                const fb = document.getElementById('fb-' + num);
+                if (fb) fb.classList.remove('hidden');
+            } else {
+                btn.classList.add('wrong');
+                loseCred(10);
+                setTimeout(() => { btns.forEach(b => { if(!b.classList.contains('wrong')){ b.disabled = false; b.style.opacity = '1'; } }); }, 600);
+            }
+        }
+
+        function revealIntel(key) {
+            const vocabMap = { 'fade': 0, 'leagues': 1, 'corpo': 2, 'punk': 3, 'fixer': 4, 'hold': 5 };
+            const data = vocabData[vocabMap[key]];
+            const content = document.getElementById('intel-content');
+            content.innerHTML = `<div class="fade-in">
+                <h3 class="font-title text-4xl text-neonCyan mb-4 uppercase">${data.word}</h3>
+                <span class="text-xs text-gray-500 font-mono uppercase tracking-widest block mb-6">${data.type}</span>
+                <p class="text-white text-xl border-l-2 border-neonCyan pl-4 mb-8">${data.def}</p>
+                <div class="stt-box p-6 italic text-gray-400 text-lg">"${data.follow}"</div>
+            </div>`;
+            document.getElementById('intel-panel').classList.remove('translate-x-full');
+        }
+
+        function toggleIntel() { toggleDrawer('intel-panel'); }
+
+        window.onload = () => {
+            updateHUD();
+            renderStep();
+        };
+    </script>
+</body>
+</html>
